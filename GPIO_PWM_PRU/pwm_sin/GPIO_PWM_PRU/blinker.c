@@ -19,13 +19,29 @@
   
    int main (void)
    {
-	double freq = 440;
+	double freq = 880;
 	double omega = 2*M_PI*freq;
 	double sampleRate = 133333.3333333333;
 	int samples = (int)(sampleRate/freq);
     	unsigned int pwms[samples];
 	int i;
+	FILE *fp;	
 	
+	if ((fp=fopen("/sys/class/gpio/export", "w"))==NULL){
+		printf("Cannot open File\n");
+		return(1);
+	}
+	fprintf(fp,"7");
+	fclose(fp);
+
+	if ((fp=fopen("/sys/class/gpio/gpio7/direction", "w"))==NULL){
+		printf("Cannot open File\n");
+		return(1);
+	}
+	fprintf(fp,"out");
+	fclose(fp);
+
+
 	for(i=0; i<samples;i++){
 		pwms[i] = 250+(int)(250*sin(omega*i/sampleRate));
 		printf("%d ", pwms[i]);
