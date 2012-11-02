@@ -1,5 +1,5 @@
 
-#define GPIO1 0x44e07000
+#define GPIO1 0x4804c000
 #define GPIO_CLEARDATAOUT 0x190
 #define GPIO_SETDATAOUT 0x194
 #define MEM_START 0x00000000
@@ -8,40 +8,39 @@ LBCO r0, C4, 4, 4
 CLR r0, r0, 4
 SBCO r0, C4, 4, 4
 
-MOV r1, 4
+MOV r1, 0
 MOV r21, 496
-MOV r22, 11
-MOV r23, 8
+MOV r22, 10
+MOV r23, 7
 MOV r24, 495
+MOV r18, 1212
 MOV r19, MEM_START
 
-
 LOAD_VALUE:
-	LBBO r18, r19, 0, 4
 	LBBO r2, r19, r1, 4
 	SUB r2, r2, r22
 	SUB r10, r2, r23
 	ADD r1, r1, 4
 	QBNE PWM_ON, r1, r18
-	MOV r1, 4
+	MOV r1, 0
 
 PWM_ON:
-	MOV r3, 1<<7
-	MOV r5, 0
+    MOV r3, 1<<22
 	QBEQ DELAY2, r2, 0
-	MOV r4, GPIO1 | GPIO_SETDATAOUT
-	SBBO r3, r4, 0, 4
+    MOV r4, GPIO1 | GPIO_SETDATAOUT
+    SBBO r3, r4, 0, 4
+    MOV r5, 0
 
 DELAY:
-	ADD r5, r5, 1
-	QBEQ LOAD_VALUE, r5, r21
-	QBNE DELAY, r5, r2
+    ADD r5, r5, 1
+    QBEQ LOAD_VALUE, r5, r21
+    QBNE DELAY, r5, r2
 
 PWM_OFF:
-	MOV r3, 1<<7
-	MOV r4, GPIO1 | GPIO_CLEARDATAOUT
-	SBBO r3, r4, 0, 4
-	QBA DELAY
+    MOV r3, 1<<22
+    MOV r4, GPIO1 | GPIO_CLEARDATAOUT
+    SBBO r3, r4, 0, 4
+    QBA DELAY
 
 DELAY2:
 	ADD r5, r5, 1

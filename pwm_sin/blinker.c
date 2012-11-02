@@ -20,14 +20,18 @@
    int main (void)
    {
 	//Variables for sinusoidal data
-	double freq = 880;
+	double freq = 367;
 	double omega = 2*M_PI*freq;
 	double sampleRate = 133333.3333333333;
 	int samples = (int)(sampleRate/freq);
-    	unsigned int pwms[samples];
+    	unsigned int pwms[2000];
 	int i;
 	FILE *fp;	
-	
+
+	//Initialize all 0s
+	for(i=0; i<2000; i++){
+		pwms[i] = 0;
+	}
 
 	//Eports GPIO0_7
 	if ((fp=fopen("/sys/class/gpio/export", "w"))==NULL){
@@ -47,9 +51,13 @@
 
 	//Creates the sinusoid data to be pushed into the PRU's memory. (DO NOT USE BELOW 67 HZ)
 	//There is not enough memory on the PRU
-	for(i=0; i<samples;i++){
-		pwms[i] = 250+(int)(250*sin(omega*i/sampleRate));
-		printf("%d ", pwms[i]);
+	
+	pwms[0] = (samples+1)*4;	
+
+	for(i=1; i<=samples;i++){
+		if(i < 2000){
+			pwms[i] = 250+(int)(25*sin(omega*(i-1)/sampleRate));
+		}
 	}
 
 	/* Initialize structure used by prussdrv_pruintc_intc   
@@ -64,11 +72,47 @@
 	prussdrv_pruintc_init(&pruss_intc_initdata);
 
 	/* load array on PRU */
-	prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, pwms, sizeof(unsigned int)*samples);
+	prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, pwms, sizeof(unsigned int)*(samples+1));
 
 	/* Load and execute binary on PRU */
 	prussdrv_exec_program(PRU_NUM, "./blinker.bin");
-      
+
+	printf("Frequency=%f\n",freq);
+	fflush(stdout);
+	scanf("%lf", &freq);
+	if(freq < 67){
+		printf("Frequency: %f is too low. Enter a number higher than 67\n", freq);
+		freq = 67;
+	}
+	printf("Frequency=%f\n",freq);
+	fflush(stdout);
+
+	while(1){
+		if(freq >=67){
+			omega = 2*M_PI*freq;
+			samples = (int)(sampleRate/freq);
+			pwms[0] = (samples+1)*4;
+			for(i=1; i<=samples;i++){
+				if(i < 2000){
+					pwms[i] = 250+(int)(25*sin(omega*(i-1)/sampleRate));
+				}
+			}
+			
+			/* load array on PRU */
+			prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, pwms, sizeof(unsigned int)*(samples+1));
+	
+			/* Load and execute binary on PRU */
+			prussdrv_exec_program(PRU_NUM, "./blinker.bin");
+			
+		}
+		scanf("%lf", &freq);
+		if(freq < 67){
+			printf("Frequency: %f is too low. Enter a number higher than 67\n", freq);
+			freq = 67;
+		}
+		printf("Frequency=%f\n",freq);
+		fflush(stdout);	
+	}
 	/* Wait for event completion from PRU */
 	prussdrv_pru_wait_event (PRU_EVTOUT_0);  // This assumes the PRU generates an interrupt
                                                 // connected to event out 0 immediately before halting
